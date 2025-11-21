@@ -1,0 +1,106 @@
+---
+title: "CS1320 Final Project"
+author: "Madelynn Smith"
+date: "2025-11-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(ggplot2, dplyr, RColorBrewer, wordcloud)
+```
+
+```{r load data}
+Data <- read.csv("/Users/madelynnjoan/Desktop/Connections_Data.csv")
+```
+
+```{r graph 1}
+##NOTE THAT ITS COUNTING THEM ALL SO THERE IS X4 GAMES
+Data %>%
+  count(Group.Name, sort = TRUE) %>%          #getting count
+  top_n(14, n) %>%                            #top 10 groups
+  ggplot(aes(x = reorder(Group.Name, -n), y = n, fill = Group.Name)) + #chart
+  geom_col(show.legend = FALSE) +             
+  theme_minimal() +
+  labs(
+    title = "Top 10 Most Common Categories",
+    x = "Group Name",
+    y = "Count"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+easiest to most difficult being yellow, green, blue, and purple
+```{r homophone data}
+homophones_data <- Data %>%
+  filter(Group.Name == "HOMOPHONES") 
+```
+
+```{r graph 2}
+homophones_data %>%
+  count(Group.Level) %>%
+  ggplot(aes(x = as.factor(Group.Level), y = n, fill = as.factor(Group.Level))) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal() +
+  labs(title = "Difficulty Distribution of Homophones",
+       x = "Group Level",
+       y = "Count")
+
+homophones_data %>%
+  group_by(Puzzle.Date) %>%
+  summarise(avg_difficulty = mean(Group.Level, na.rm = TRUE)) %>%
+  ggplot(aes(x = Puzzle.Date, y = avg_difficulty)) +
+  geom_point(color = "maroon", 
+             size = 5) +
+  theme_minimal() +
+  labs(title = "Average Homophones Difficulty Over Time",
+       x = "Puzzle Date",
+       y = "Average Difficulty")
+```
+```{r word cloud}
+freq <- sort(table(Data$Word), decreasing = TRUE)
+freq_top <- head(freq, 100)
+
+set.seed(123)
+
+wordcloud(
+  words = names(freq_top),
+  freq = as.numeric(freq_top),
+  scale = c(4, 0.5),              
+  random.order = FALSE,   # puts big ones in the center
+  colors = brewer.pal(8, "Dark2")
+)
+
+Data %>%
+  count(Word, sort = TRUE) %>%          
+  top_n(14, n) %>%                            
+  ggplot(aes(x = reorder(Word, -n), y = n, fill = Word)) + 
+  geom_col(show.legend = FALSE) +             
+  theme_minimal() +
+  labs(
+    title = "Top 10 Most Common Words Used",
+    x = "Word",
+    y = "Count"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r ball}
+ball_data <- Data %>%
+  filter(Word == "BALL") 
+
+freq_ball <- table(ball_data$Starting.Row, ball_data$Starting.Column)
+
+ball_heatmap <- as.data.frame(freq_ball)
+colnames(ball_heatmap) <- c("Row", "Col", "Freq")
+
+ggplot(ball_heatmap, aes(x = Col, y = Row, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Heatmap of Ball Starting Positions",
+       x = "Starting Column",
+       y = "Starting Row") +
+  theme_minimal()
+
+```
